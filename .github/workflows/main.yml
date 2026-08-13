@@ -23,23 +23,8 @@ jobs:
             exit 1
           fi
 
-          echo "Found: $ZIP_FILE"
           mkdir -p android-project
           unzip -q "$ZIP_FILE" -d android-project
-
-      - name: Find Android project
-        run: |
-          GRADLEW=$(find android-project -name "gradlew" -type f | head -n 1)
-
-          if [ -z "$GRADLEW" ]; then
-            echo "gradlew not found!"
-            find android-project -maxdepth 3 -type f | head -100
-            exit 1
-          fi
-
-          PROJECT_DIR=$(dirname "$GRADLEW")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          chmod +x "$GRADLEW"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -47,13 +32,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
       - name: Build APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: ./gradlew assembleDebug --stacktrace
+        working-directory: android-project
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SkincareGlowUp-APK
-          path: |
-            ${{ env.PROJECT_DIR }}/**/build/outputs/apk/**/*.apk
+          path: android-project/**/build/outputs/apk/**/*.apk
